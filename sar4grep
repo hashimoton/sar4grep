@@ -1,0 +1,104 @@
+#! /usr/bin/env ruby
+# coding: utf-8
+# Convert sar text file to be greppable like sadf
+
+require "optparse"
+
+
+class Sar4GrepCommand
+
+
+  def initialize()
+  end
+
+
+  def opt_parse(argv)
+    opts = {}
+    
+    OptionParser.new do |opt|
+      begin
+        opt.version = '0.1.0'
+        opt.banner += " FILE [FILE...]"
+        opt.separator("\nOptions:")
+        
+        opt.on('--raw-time',
+          'print time without reformatting') {|v| opts[:raw_time] = v}
+        opt.parse!(ARGV)
+      rescue => e
+        $stderr.puts "ERROR: #{e}.\n#{opt}"
+        exit 1
+      end
+    end
+    
+    return opts
+  end
+
+
+  def print_values(tod, keycols, cols, subkey = nil)
+    if subkey.nil?
+      cols[1..-1].each_with_index do |value, index|
+        puts "#{tod} #{keycols[index]} #{value}"
+      end
+    else
+      cols[2..-1].each_with_index do |value, index|
+        puts "#{tod} #{keycols[0]}.#{subkey}.#{keycols[index+1]} #{value}"
+      end
+      
+    end
+  end
+
+
+  def main(argv)
+    opts = opt_parse(argv)
+    collected_on = nil
+    keycols = nil
+    is_cpu = false
+
+    ARGF.each_line do |line|
+      line.chomp!
+      cols = line.split(" ")
+      
+      if cols[0] =~ /Linux/
+        os, version, server, date, arch, = cols
+        collected_on = date
+        next
+      end
+      
+      if cols[0] =~ /\d\d:\d\d:\d\d/
+        # TODO convert time format
+        tod = "#{collected_on} #{cols[0]}"
+        
+        if cols[1] =~ /[A-z]/
+          if cols[1] =~ /CPU/
+            is_cpu = true
+          end
+          
+          if (cols[2].nil? || cols[2].empty?) || cols[2] =~ /[A-z]/
+            keycols = cols[1..-1]
+          else
+            print_values(tod, keycols, cols, cols[1])
+          end
+        elsif is_cpu
+          print_values(tod, keycols, cols, cols[1])
+        else
+          print_values(tod, keycols, cols)
+        end
+      else
+        is_cpu = false
+      end
+     
+    end
+    
+  end # main
+
+end # class
+
+
+################################
+
+
+Sar4GrepCommand.new.main(ARGV)
+
+exit 0
+
+# EOF
