@@ -64,6 +64,11 @@ class Sar4GrepCommand
         next
       end
       
+      if !cols[1].nil? && (cols[1] == "AM" || cols[1] == "PM")
+        time = cols.shift
+        cols[0] = "#{time}#{cols[0]}"
+      end
+      
       if cols[0] =~ /\d\d:\d\d:\d\d/
         # TODO convert time format
         tod = "#{collected_on} #{cols[0]}"
@@ -95,7 +100,6 @@ end # class
 
 
 ################################
-
 
 Sar4GrepCommand.new.main(ARGV)
 
