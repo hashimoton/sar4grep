@@ -49,11 +49,37 @@ class Sar4GrepCommand
       
     end
   end
+  
+  def to_time24(time_text)
+    time24 = ""
+    if time_text.end_with?("AM")
+      time12 = time_text.sub("AM", "")
+      if time12.start_with?("12:")
+        h,m,s = time12.split(":")
+        time24 = ["00", m, s].join(":")
+      else
+        time24 = time12
+      end
+    elsif time_text.end_with?("PM")
+      time12 = time_text.sub("PM", "")
+      if time12.start_with?("12:")
+        time24 = time12
+      else
+        h, m, s = time12.split(":")
+        time24 = ["#{h.to_i + 12}", m, s].join(":")
+      end
+    else
+      time24 = time_text
+    end
+    
+    return time24
+  end
 
 
   def main(argv)
     opts = opt_parse(argv)
     @date_pattern = opts[:p] ? opts[:p] : "%Y-%m-%d"
+    @is_raw_time = opts[:raw_time] ? opts[:raw_time] : false
     
     collected_on = nil
     keycols = nil
@@ -85,11 +111,16 @@ class Sar4GrepCommand
       end
       
       if cols[0] =~ /\d\d:\d\d:\d\d/
-        # TODO convert time format
-        tod = "#{collected_on} #{cols[0]}"
+        if @is_raw_time
+          collected_at = cols[0]
+        else
+          collected_at = to_time24(cols[0])
+        end
+        
+        tod = "#{collected_on} #{collected_at}"
         
         if cols[1] =~ /[A-z]/
-          if cols[1] =~ /CPU/
+          if cols[1] == "CPU"
             is_cpu = true
           end
           
@@ -115,6 +146,8 @@ end # class
 
 
 ################################
+
+# puts Sar4GrepCommand.new.to_time24(ARGV[0])
 
 Sar4GrepCommand.new.main(ARGV)
 
