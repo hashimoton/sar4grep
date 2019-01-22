@@ -3,6 +3,7 @@
 # Convert sar text file to be greppable like sadf
 
 require "optparse"
+require "date"
 
 
 class Sar4GrepCommand
@@ -21,6 +22,8 @@ class Sar4GrepCommand
         opt.banner += " FILE [FILE...]"
         opt.separator("\nOptions:")
         
+        opt.on('-p=DATE_PATTERN',
+          'collected date pattern ("%Y-%m-%d")') {|v| opts[:p] = v}
         opt.on('--raw-time',
           'print time without reformatting') {|v| opts[:raw_time] = v}
         opt.parse!(ARGV)
@@ -50,6 +53,8 @@ class Sar4GrepCommand
 
   def main(argv)
     opts = opt_parse(argv)
+    @date_pattern = opts[:p] ? opts[:p] : "%Y-%m-%d"
+    
     collected_on = nil
     keycols = nil
     is_cpu = false
@@ -60,7 +65,17 @@ class Sar4GrepCommand
       
       if cols[0] =~ /Linux/
         os, version, server, date, arch, = cols
-        collected_on = date
+        begin
+          ymd = Date.strptime(date, @date_pattern)
+          if ymd.year < 2000
+            raise ArgumentError
+          end
+        rescue ArgumentError => e
+          $stderr.puts "ERROR: date pattern #{@date_pattern} unmatch with #{date}. Modify -p for your sar date pattern."
+          exit 1
+        end
+        
+        collected_on = ymd
         next
       end
       
