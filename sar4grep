@@ -121,7 +121,9 @@ class Sar4GrepCommand
         tod = "#{collected_on} #{collected_at}"
         
         if cols[1] =~ /[A-z]/
-          is_subkey_available = subkey_keys.include?(cols[1])
+          if subkey_keys.include?(cols[1])
+            is_subkey_available = true
+          end
           
           if (cols[2].nil? || cols[2].empty?) || cols[2] =~ /[A-z]/
             keycols = cols[1..-1]
@@ -145,8 +147,6 @@ end # class
 
 
 ################################
-
-# puts Sar4GrepCommand.new.to_time24(ARGV[0])
 
 Sar4GrepCommand.new.main(ARGV)
 
