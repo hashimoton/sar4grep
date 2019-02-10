@@ -83,6 +83,7 @@ class Sar4GrepCommand
     
     collected_on = nil
     keycols = nil
+    subkey_keys = ["CPU", "INTR", "TTY"]
     is_subkey_available = false
 
     ARGF.each_line do |line|
@@ -120,9 +121,7 @@ class Sar4GrepCommand
         tod = "#{collected_on} #{collected_at}"
         
         if cols[1] =~ /[A-z]/
-          if cols[1] == "CPU" || cols[1] == "INTR"
-            is_subkey_available = true
-          end
+          is_subkey_available = subkey_keys.include?(cols[1])
           
           if (cols[2].nil? || cols[2].empty?) || cols[2] =~ /[A-z]/
             keycols = cols[1..-1]
